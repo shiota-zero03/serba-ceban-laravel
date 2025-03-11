@@ -12,11 +12,15 @@ use App\Models\DetailPemesanan;
 use App\Models\User;
 use App\Models\Product;
 
+use App\Services\WhatsappService;
+
 class PemesananController extends Controller
 {
-    public function __construct()
+    private $waService;
+    public function __construct(WhatsappService $waService)
     {
         $this->middleware('just-admin');
+        $this->waService = $waService;
     }
     /**
      * Display a listing of the resource.
@@ -36,8 +40,10 @@ class PemesananController extends Controller
                     return count($row->detail);
                 })
                 ->addColumn('broadcast', function($row) {
+                    $url = route('pemesanan.index') . "/broadcast/" . $row->id;
+
                     return Carbon::parse($row->tanggal_pemesanan)->gte(Carbon::today('Asia/Jakarta'))
-                        ? "<button class='btn btn-primary btn-xs rounded py-1'>Broadcast Now</button>"
+                        ? "<button onclick=\"window.location.href='$url'\" class='btn btn-primary btn-xs rounded py-1'>Broadcast Now</button>"
                         : "<button class='btn btn-primary btn-xs rounded py-1' disabled>Broadcast Now</button>";
                 })
                 ->addColumn('action', function($row){
@@ -133,6 +139,40 @@ class PemesananController extends Controller
 
         $dataPemesanan = Pemesanan::with(['mitra', 'detail'])->findOrFail($id);
         return view('Pages.Pemesanan.view', compact(['dataPemesanan']));
+    }
+
+    public function broadcast (Request $request, string $id) {
+        $dataPemesanan = Pemesanan::with(['mitra', 'detail'])->findOrFail($id);
+
+        $phone = $dataPemesanan['mitra']['phone_number'];
+
+        $name = $dataPemesanan['mitra']['name'];
+
+        $textproduct = '';
+        foreach ($dataPemesanan['detail'] as $key => $value) {
+            $productName = $value['nama_produk'];
+            $qty = $value['jumlah_pesan'];
+            $textproduct .= "- $productName : $qty \n";
+        }
+
+$message = "
+Kepada Yth. $name
+Berikut informasi mengenai request produk untuk dikirimkan.
+$textproduct
+Tertanda
+
+Admin Serba Ceban
+";
+
+        $response = json_decode($this->waService->sendMessage($message, $phone), true);
+
+        if (isset($response['error'])) {
+            return back()->with(['errorData' => $response['error'].': data whatsapp tidak valid gunakan format 628XXXX']);
+        }
+
+        Pemesanan::find($id)->update(['is_broadcast' => true]);
+
+        return back()->with(['success' => 'Broadcast berhasil dikirim']);
     }
 
     /**

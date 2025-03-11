@@ -41,6 +41,8 @@
 
         $('#data-table').DataTable().destroy();
         var table = $('#data-table').DataTable({
+            processing: true,
+            serverSide: true,
             ajax: "{{ route('mitra.index') }}",
             lengthChange: false,
             columns: [

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Product;
+use App\Models\User;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -29,18 +30,16 @@ class ProductController extends Controller
                     return "Rp ".number_format($row->harga, 0, ',', '.');
                 })
                 ->addColumn('action', function($row){
-                    if(Auth::user()->role == 'MITRA') {
-                        return "<a href='#' onclick='editData($row->id)' class='btn btn-warning py-1 rounded small btn-xs'><i class='bx bx-edit-alt'></i></a>
-                                <a href='#' onclick='deleteData($row->id)' class='btn btn-danger py-1 rounded small btn-xs'><i class='bx bx-trash'></i></a>";
-                    } else {
-                        return "-";
-                    }
+                    return "<a href='#' onclick='editData($row->id)' class='btn btn-warning py-1 rounded small btn-xs'><i class='bx bx-edit-alt'></i></a>
+                            <a href='#' onclick='deleteData($row->id)' class='btn btn-danger py-1 rounded small btn-xs'><i class='bx bx-trash'></i></a>";
                 })
                 ->rawColumns(['price', 'action'])
                 ->make(true);
         }
 
-        return view('Pages.Produk.index');
+        $mitra = User::where('role', 'MITRA')->get();
+
+        return view('Pages.Produk.index', compact(['mitra']));
     }
 
 
@@ -65,7 +64,7 @@ class ProductController extends Controller
                 'kode_produk' => $request->kode_produk,
                 'nama_produk' => $request->nama_produk,
                 'harga' => $request->harga,
-                'mitra_id' => Auth::user()->id,
+                'mitra_id' => $request->mitra_id,
             ];
 
             Product::createOrFirst($data);
@@ -114,7 +113,6 @@ class ProductController extends Controller
                 'kode_produk' => $request->kode_produk,
                 'nama_produk' => $request->nama_produk,
                 'harga' => $request->harga,
-                'mitra_id' => Auth::user()->id,
             ];
 
             Product::find($id)->update($data);
@@ -146,6 +144,9 @@ class ProductController extends Controller
     public function __rules(Request $request, string $type)
     {
         $message = [
+            'mitra_id.required' => 'Mitra tidak boleh kosong',
+            'mitra_id.string' => 'Mitra tidak valid',
+            'mitra_id.exist' => 'Mitra tidak terdaftar',
             'kode_produk.required' => 'Kode produk tidak boleh kosong',
             'kode_produk.string' => 'Kode produk tidak valid',
             'kode_produk.unique' => 'Kode produk sudah pernah digunakan',
@@ -160,6 +161,7 @@ class ProductController extends Controller
 
         if($type == 'create') {
             return $request->validate([
+                'mitra_id' => ['required', 'string', 'exists:users,id'],
                 'kode_produk' => ['required', 'string', 'max:255', 'unique:products,kode_produk'],
                 'nama_produk' => ['required', 'string', 'max:255'],
                 'harga' => ['required', 'string', 'max:255']

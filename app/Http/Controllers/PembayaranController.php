@@ -13,11 +13,15 @@ use App\Models\User;
 use App\Models\Product;
 use App\Models\Pembayaran;
 
+use App\Services\WhatsappService;
+
 class PembayaranController extends Controller
 {
-    public function __construct()
+    private $waService;
+    public function __construct(WhatsappService $waService)
     {
         $this->middleware('just-admin');
+        $this->waService = $waService;
     }
     /**
      * Display a listing of the resource.
@@ -50,11 +54,13 @@ class PembayaranController extends Controller
                     }
                 })
                 ->addColumn('status', function($row) {
+                    $showButton = "";
                     $status = "";
                     $color = "";
                     if($row['bayar']) {
                         $status = $row['bayar']['status_pembayaran'];
                         if($status == 'Pending') {
+                            $showButton = "<a href='".route('pembayaran.accept', $row->id)."' class='ms-2 btn btn-success py-1 rounded small btn-xs me-1'><i class='bx bx-check'></i></a>";
                             $color = 'text-warning';
                         } elseif($status == 'Lunas') {
                             $color = 'text-success';
@@ -66,7 +72,10 @@ class PembayaranController extends Controller
                         $color = "text-danger";
                     }
                     return "
-                        <span class='$color'>$status</span>
+                        <div>
+                            <span class='$color'>$status</span>
+                            $showButton
+                        </div>
                     ";
                 })
                 ->addColumn('tanggal_bayar', function($row) {
@@ -172,6 +181,9 @@ class PembayaranController extends Controller
 
             $pesanan = Pemesanan::with(['mitra', 'detail', 'bayar'])->find($id);
 
+            $phone = $pesanan['mitra']['phone_number'];
+            $name = $pesanan['mitra']['name'];
+
             $totalTerjual = 0;
             $biayaTerjual = 0;
             $totalSisa = 0;
@@ -214,11 +226,68 @@ class PembayaranController extends Controller
             }
 
             $pesanan->update(['is_paid' => true]);
+
+
+            $totalMasuk = $totalTerjual + $totalSisa;
+            $bt = 'Rp '.number_format($biayaTerjual, 0, '.', '.');
+            $bs = 'Rp '.number_format($biayaSisa, 0, '.', '.');
+            $bp = 'Rp '.number_format($biayaPlastik, 0, '.', '.');
+            $tf = $biayaTerjual - ($biayaSisa + $biayaPlastik);
+
+$message = "
+Kepada Yth. $name
+Admin telah melakukan transfer uang ke rekening anda dengan rincian sebagai berikut:
+
+- Produk diterima: $totalMasuk
+- Produk terjual: $totalTerjual
+- Produk sisa: $totalSisa
+
+- Total penjualan: $bt
+- Total potongan: $bs
+- Biaya Plastik: $bp
+- Total Transfer: $tf
+
+
+Tertanda
+
+Admin Serba Ceban
+";
+
+            $fileUrl = asset('/').$data['bukti_transfer'];
+
+            $response = json_decode($this->waService->sendMessageWithFile($message, $phone, $fileUrl), true);
+
+            if (isset($response['error'])) {
+                return back()->with(['errorData' => $response['error'].': data whatsapp tidak valid gunakan format 628XXXX']);
+            }
+
             Pembayaran::createOrFirst($data);
 
 
             DB::commit();
             return redirect(route('pembayaran.index'))->with(['success' => 'Data berhasil diperbarui']);
+        } catch (\Throwable $th) {
+            DB::rollback();
+            return back()->with(['errorData' => $th->getMessage()]);
+        }
+    }
+
+    public function accepted(Request $request, string $id)
+    {
+        try {
+            DB::beginTransaction();
+
+            $data = Pembayaran::with(['mitra'])->find($id);
+
+            if($data) {
+                $data->update(['status_pembayaran' => 'Lunas']);
+            } else {
+                abort(404);
+            }
+
+
+            DB::commit();
+            return back()->with(['success' => 'Pembayaran dikonfirmasi']);
         } catch (\Throwable $th) {
             DB::rollback();
             return back()->with(['errorData' => $th->getMessage()]);

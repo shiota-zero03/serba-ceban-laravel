@@ -24,7 +24,6 @@
                                 <th>No</th>
                                 <th>Kode Pemesanan</th>
                                 <th>Nama Mitra</th>
-                                <th>Tanggal Penerimaan</th>
                                 <th>Tanggal Bayar</th>
                                 <th>Total Transfer</th>
                                 <th>Status</th>
@@ -58,7 +57,6 @@
                 { data: 'DT_RowIndex', searchable: false },
                 { data: 'kode_pemesanan' },
                 { data: 'nama_mitra' },
-                { data: 'tanggal_penerimaan' },
                 { data: 'tanggal_bayar' },
                 { data: 'transfer' },
                 { data: 'status' },

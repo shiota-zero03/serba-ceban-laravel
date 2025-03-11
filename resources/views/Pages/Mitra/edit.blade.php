@@ -11,7 +11,7 @@
                 <form class="row g-2" action="{{route('mitra.update', $user->id)}}" method="POST">
                     @csrf
                     @method('PUT')
-                    <div class="col-12">
+                    <div class="col-md-6 col-12">
                         <div class="form-group">
                             <label for="name">Nama Mitra</label>
                             <input type="text" class="form-control" name="name" placeholder="Masukkan nama mitra disini" value="{{ $user['name'] }}">
@@ -31,7 +31,7 @@
                         </div>
                     </div>
 
-                    <div class="col-md-6 col-12">
+                    {{-- <div class="col-md-6 col-12">
                         <div class="form-group">
                             <label for="password">Password</label>
                             <input type="password" class="form-control" name="password" placeholder="Masukkan password disini" >
@@ -39,7 +39,7 @@
                                 <small class="text-danger"><em>{{ $message }}</em></small>
                             @enderror
                         </div>
-                    </div>
+                    </div> --}}
 
                     <div class="col-md-6 col-12">
                         <div class="form-group">

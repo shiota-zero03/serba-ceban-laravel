@@ -27,6 +27,12 @@ class AuthController extends Controller
         ]);
 
         if(Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
+            if(Auth::user()->role == "MITRA") {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                return back()->with(['errorData' => 'User tidak ditemukan']);
+            }
             $request->session()->regenerate();
             return redirect()->intended(route('dashboard'));
         } else {

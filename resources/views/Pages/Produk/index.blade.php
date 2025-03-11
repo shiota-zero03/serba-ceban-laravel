@@ -5,12 +5,10 @@
     <div class="col-12">
         <div class="d-md-flex align-items-center justify-content-between">
             <h4 class="m-md-0 text-md-start text-center">Manajemen Produk</h4>
-            @if(auth()->user()->role == 'MITRA')
-                <button onclick="handleCreate()" class="btn btn-primary d-flex align-items-center justify-content-center gap-2">
-                    <i class="bx bx-plus"></i>
-                    Tambah Data
-                </button>
-            @endif
+            <button onclick="handleCreate()" class="btn btn-primary d-flex align-items-center justify-content-center gap-2">
+                <i class="bx bx-plus"></i>
+                Tambah Data
+            </button>
         </div>
     </div>
     <div class="col-12 position-relative">
@@ -46,6 +44,16 @@
             </div>
             <div class="modal-body">
                 <form id="product-form">
+                    <div class="form-group mb-2">
+                        <label for="code-create">Pilih Mitra</label>
+                        <select name="mitra_data" id="mitra_data" class="form-control">
+                            <option value="">-- Pilih mitra --</option>
+                            @foreach ($mitra as $mtr)
+                                <option value="{{ $mtr->id }}">{{ $mtr->name }} - {{ $mtr->phone_number }}</option>
+                            @endforeach
+                        </select>
+                        <small><em class="text-danger" id="mitra-error"></em></small>
+                    </div>
                     <div class="form-group mb-2">
                         <label for="code-create">Kode Produk</label>
                         <input type="text" class="form-control" id="code-create" name="code-create" placeholder="Masukkan kode produk">
@@ -120,6 +128,8 @@
 
         $('#data-table').DataTable().destroy();
         var table = $('#data-table').DataTable({
+            processing: true,
+            serverSide: true,
             ajax: "{{ route('produk.index') }}",
             lengthChange: false,
             columns: [
@@ -139,7 +149,9 @@
         function handleCreate()
         {
             $('#code-create').val('');
+            $('#mitra_data').val('');
             $('#code-create-error').html('');
+            $('#mitra-error').html('');
             $('#name-create').val('');
             $('#name-create-error').html('');
             $('#price-create').val('');
@@ -222,6 +234,7 @@
         }
 
         $(document).ready(function () {
+
             $('#product-form').submit(function (e) {
                 e.preventDefault(); // Mencegah reload halaman
 
@@ -229,12 +242,14 @@
                 $('.loading-submit').addClass('d-flex');
                 $('.send-button').addClass('d-none');
 
+                $('#mitra-error').html('');
                 $('#code-create-error').html('');
                 $('#name-create-error').html('');
                 $('#price-create-error').html('');
 
                 let formData = {
                     _token: $('meta[name="csrf-token"]').attr('content'), // CSRF Token
+                    mitra_id: $('#mitra_data').val(),
                     kode_produk: $('#code-create').val(),
                     nama_produk: $('#name-create').val(),
                     harga: $('#price-create').val(),
@@ -257,6 +272,7 @@
                     error: function (xhr) {
                         let errors = xhr.responseJSON?.errors;
                         if (errors) {
+                            $('#mitra-error').text(errors.mitra_id ? errors.mitra_id[0] : '');
                             $('#code-create-error').text(errors.kode_produk ? errors.kode_produk[0] : '');
                             $('#name-create-error').text(errors.nama_produk ? errors.nama_produk[0] : '');
                             $('#price-create-error').text(errors.harga ? errors.harga[0] : '');

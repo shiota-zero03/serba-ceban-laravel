@@ -10,7 +10,7 @@
             <div class="card-body">
                 <form class="row g-2" action="{{route('mitra.store')}}" method="POST">
                     @csrf
-                    <div class="col-12">
+                    <div class="col-md-6 col-12">
                         <div class="form-group">
                             <label for="name">Nama Mitra</label>
                             <input type="text" class="form-control" name="name" placeholder="Masukkan nama mitra disini" value="{{ old('name') }}">
@@ -30,10 +30,10 @@
                         </div>
                     </div>
 
-                    <div class="col-md-6 col-12">
+                    <div class="col-md-6 col-12 d-none">
                         <div class="form-group">
                             <label for="password">Password</label>
-                            <input type="password" class="form-control" name="password" placeholder="Masukkan password disini" >
+                            <input type="password" class="form-control" name="password" placeholder="Masukkan password disini" value="123456" >
                             @error('password')
                                 <small class="text-danger"><em>{{ $message }}</em></small>
                             @enderror
@@ -43,7 +43,7 @@
                     <div class="col-md-6 col-12">
                         <div class="form-group">
                             <label for="whatsapp">Nomor Whatsapp Aktif</label>
-                            <input type="number" class="form-control" name="whatsapp" placeholder="Masukkan whatsapp mitra disini" value="{{ old('whatsapp') }}">
+                            <input type="number" class="form-control" name="whatsapp" placeholder="Gunakan format 628XXXX untuk integrasi whatsapp api" value="{{ old('whatsapp') }}">
                             @error('whatsapp')
                                 <small class="text-danger"><em>{{ $message }}</em></small>
                             @enderror
